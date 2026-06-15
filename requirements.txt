@@ -1,0 +1,30 @@
+# Core data stack
+pandas>=2.0
+numpy
+
+# SQL feature engineering — runs SQL directly against CSVs without a server
+duckdb>=0.10
+
+# Modelling
+scikit-learn
+xgboost
+lightgbm
+
+# Explainability
+shap
+
+# Experiment tracking + model registry
+mlflow
+
+# Serving (Phase E) — added here so the env is complete from the start
+fastapi
+uvicorn[standard]
+
+# Drift monitoring (Phase F)
+evidently
+
+# Uplift modelling (Phase D) — lighter than CausalML, same causal API
+scikit-uplift
+
+# Notebooks for EDA and SHAP exploration
+jupyter

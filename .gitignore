@@ -1,0 +1,30 @@
+# Data — raw files are large and not version-controlled
+data/
+
+# DuckDB database file — derived from raw data, so also ignored
+*.db
+*.duckdb
+
+# Python environment
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# MLflow run artifacts (can be very large)
+mlruns/
+mlartifacts/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Environment / secrets
+.env
+
+# OS noise
+.DS_Store
+Thumbs.db
