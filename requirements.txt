@@ -1,30 +1,22 @@
-# Core data stack
+# core
 pandas>=2.0
 numpy
+duckdb==1.5.4          # SQL feature engineering straight against the CSVs, no server
 
-# SQL feature engineering — runs SQL directly against CSVs without a server
-duckdb>=0.10
+# modelling
+scikit-learn==1.9.0    # logistic baseline + isotonic calibration
+xgboost==3.3.0         # pinned: contact count is a threshold knife-edge, wobbles under multithreading
+shap                   # phase C explainability
 
-# Modelling
-scikit-learn
-xgboost
-lightgbm
-
-# Explainability
-shap
-
-# Experiment tracking + model registry
+# tracking + registry (local sqlite backend)
 mlflow
 
-# Serving (Phase E) — added here so the env is complete from the start
+# serving (phase E)
 fastapi
 uvicorn[standard]
 
-# Drift monitoring (Phase F)
-evidently
-
-# Uplift modelling (Phase D) — lighter than CausalML, same causal API
-scikit-uplift
-
-# Notebooks for EDA and SHAP exploration
+# notebooks
 jupyter
+
+# phase F monitoring and phase D uplift are hand-rolled on numpy/pandas:
+# no evidently (drift checks are ~12 hand-rolled tests), no scikit-uplift/causalml (T-learner + Qini, ~20 lines)

@@ -28,3 +28,8 @@ mlartifacts/
 # OS noise
 .DS_Store
 Thumbs.db
+
+#exported model
+api/model/
+
+reports/
