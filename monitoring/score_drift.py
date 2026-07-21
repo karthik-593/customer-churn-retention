@@ -85,7 +85,7 @@ def report(cutoff=None, ref_split="test"):
     cur = con.execute("SELECT * FROM score_data WHERE is_free = 0").df()
     p_cur = np.asarray(model.predict(cur[config.BASE12]))
 
-    be = config.OFFER / (config.SAVE_RATE * config.ARPU * config.HORIZON_MONTHS)
+    be = config.OFFER / (config.SAVE_RATE * config.MEDIAN_MONTHLY_PAID * config.HORIZON_MONTHS)
     s, tab = score_drift(p_ref, p_cur, be)
 
     print(f"score-drift report — ref={ref_split} vs cur={cutoff}, paid (is_free=0)")

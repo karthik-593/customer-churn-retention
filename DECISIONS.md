@@ -46,20 +46,20 @@ Contact only when expected gain beats the offer:
 Cutoff = the break-even probability this implies, `offer / (save × value)`, not 0.5.
 
 Terms (fixed where assumed, derived where possible):
-- `offer_cost = ₹150` — the retention offer.
+- `offer_cost = NT$150` — the retention offer.
 - `save_rate = 0.30` — assumed lift from contact. The softest number; Phase D measures it (uplift).
-- `value = ARPU × horizon`, ARPU = ₹129/mo, derived from data (median of
+- `value = median monthly paid × horizon`, median monthly paid = NT$129/mo, derived from data (median of
   `actual_amount_paid / payment_plan_days × 30` over paid test rows — lands on the standard monthly
   plan price).
 
 `value` is swept over a 6–24 month horizon rather than pinned, because the right horizon is a
 business call and the rule should hold across it. Gross net is positive at every horizon
-(6mo ≈ ₹24k → 24mo ≈ ₹1.22M). A pessimistic net that also subtracts the discount from saved revenue
-stays positive too (6mo +₹3.2k, the thinnest point). The conclusion doesn't hinge on the horizon.
+(6mo ≈ NT$24k → 24mo ≈ NT$1.22M). A pessimistic net that also subtracts the discount from saved revenue
+stays positive too (6mo +NT$3.2k, the thinnest point). The conclusion doesn't hinge on the horizon.
 
-Operating point we quote: 12 months → value ₹1,548 → break-even ≈ 0.323. So we contact paid customers
-above ~0.32 calibrated P(churn) — not 0.5, and not the earlier ~0.63 (a flat ₹800 placeholder, now
-retired). At this point the rule contacts ~3,491 paid customers at 0.50 precision, net ≈ ₹287k over
+Operating point we quote: 12 months → value NT$1,548 → break-even ≈ 0.323. So we contact paid customers
+above ~0.32 calibrated P(churn) — not 0.5, and not the earlier ~0.63 (a flat NT$800 placeholder, now
+retired). At this point the rule contacts ~3,491 paid customers at 0.50 precision, net ≈ NT$287k over
 12 months. The count is a hard cut at the break-even, so it wobbles ~±1% run-to-run under
 multithreaded training; plan on precision@budget, not the integer.
 
@@ -132,20 +132,44 @@ out.
 `payment_method_id` — dropped, poison. High-cardinality categorical the tree memorises, and its
 category mix shifts across the temporal split, so it overfits and degrades the honest test number.
 
-lifecycle (`tenure_days`, `n_prior_cycles`) — built, kept out of the scorer. On a paired bootstrap
-it's topline-neutral (PR-AUC −0.0044 [−0.0133, +0.0040], within noise) while sharpening the look-safe
-(`auto_renew = 1`) slice by +0.041 [+0.029, +0.053], roughly doubling it (0.038 → 0.079). The
-14-feature variant overfits the topline (train 0.66 / test 0.40 — tenure acts as a calendar clock
-under the temporal split); base12's train–test gap is ~0, test even ≥ train. The call was made in
-rupees, not PR-AUC: topline is a wash, 14-feat overfits, and under the global cost threshold base12
-wins the backtest (net ₹287k vs ₹257k at 12mo; precision tied ~0.50; prec@1k 0.70 vs 0.68, prec@3k
-0.52 vs 0.51). The safe-slice gain is real, but a single global threshold never reaches that low-P
-segment — it only pays off with segment-specific save rates. So lifecycle goes to the Phase-D segment
-layer, not the scorer.
+lifecycle (`tenure_days`, `n_prior_cycles`) — built, kept out of the scorer. Selection used a
+val-set OOF cost backtest (3-fold temporal, leave-one-cohort-month-out calibration, val break-even
+0.302 from median monthly paid NT$138): base12 net NT$234k vs 14-feat NT$220k; prec@1k 0.633 vs 0.608; prec@3k 0.461
+vs 0.452. base12 wins. A val-bootstrapped paired comparison (2000 resamples) shows the gap's
+character: topline within noise (PR-AUC delta −0.0068 [−0.0160, +0.0024], CI spans zero, mean
+slightly favours base12); 14-feat overfits (train 0.66 / test 0.40 — tenure acts as a calendar clock
+under the temporal split); base12's train–test gap is ≈0. The on-auto-renew safe slice
+(`auto_renew = 1`, n=77,645, base_rate 0.0109) sharpens on val: +0.0435 [+0.0278, +0.0599] — both
+bounds above zero; the absolute starting point is low, so this is a ranking improvement on a low-P
+slice, not a large absolute lift.
 
-This overturned the starting hypothesis that lifecycle would help. The result is the discovery:
-lifecycle is topline-neutral, the 14-feat overfits via the tenure clock, and it sharpens the saveable
-segment — but the deployed global rule can't use that.
+Test figures are report-only. At the val-derived break-even 0.302: 3,513 contacted, precision 0.499,
+net NT$286,679 at realized test median monthly paid NT$129; NT$343,444 at val median monthly paid NT$138 is a sensitivity line. The
+similar figure vs the prior NT$287k is coincidence — a looser cut and the same realized median monthly paid. The
+break-even rests on save_rate = 0.30, which is assumed and unmeasured (AB_DESIGN.md exists to
+measure it), so the 0.302-vs-0.323 distinction is smaller than the uncertainty underneath it.
+
+**Selection audit.** Selection was originally run on the test set — a procedure error. The corrected
+procedure (val OOF backtest) re-derived the same lock. The deployed threshold of 0.323 (median monthly paid NT$129,
+value NT$1,548) was always correct; the error was in which set the selection ran on, not in the
+threshold. The reported backtest numbers changed; the deployed system did not.
+
+The safe slice is closed by cost arithmetic. The entire val safe slice lies below the break-even for
+any save_rate ≤ 1.0: the top-decile mean P of 0.0398 requires save_rate 2.275 — impossible. 0 of
+77,645 val safe-slice customers clear even the 0.302 backtest cut. Segment-specific save rates
+cannot unlock this slice; the binding constraint is the offer cost, not the model. At NT$20, the
+break-even P drops to 0.043 and 3,146 safe-slice customers become EV-positive: net upper bound
+NT$23,349 at deployed valuation (median monthly paid NT$129 × 12 = NT$1,548; save_rate 0.30 assumed
+for a NT$150 discount — a cheap touch plausibly moves fewer; upper bound). The bracket is sharp:
+NT$30 puts 895 above cut (net NT$2,783, near break-even), NT$20 puts 3,146 (net NT$23,349). A
+low-cost channel (email or
+in-app nudge at ≈NT$20) is worth measuring against this segment if one exists — the current design has
+no such channel. The closure argument rests on calibration that holds inside the slice: overall
+mean_pred 0.01074 vs observed 0.01086; top decile 0.03981 vs 0.04000.
+
+This overturned the starting hypothesis that lifecycle would help. The result: lifecycle is
+topline-neutral, the 14-feat overfits via the tenure clock, and it sharpens a slice that the current
+offer economics cannot reach.
 
 ## 7. Saveability ≠ P(churn) — why Phase D is an uplift experiment, not more scoring
 Phase C's contact list (calibrated P ≥ break-even) collapses to one regime: it's entirely the
@@ -166,8 +190,10 @@ call here.
 
 What transfers to KKBox is the method and discipline (uplift ≠ propensity; a control holdout is
 non-negotiable; trust coarse tiers, not per-customer scores), not Hillstrom's numbers. The experiment
-that would measure KKBox's own per-slice save rates is specified in **AB_DESIGN.md**. That measured
-save_rate then replaces the 0.30 assumption in §3.
+specified in **AB_DESIGN.md** measures save_rate for the population that is actually contacted — the
+off-auto-renew book. It cannot reach the on-auto-renew safe slice: that slice's P values lie below
+the break-even for any save_rate ≤ 1.0 and the binding constraint is the offer cost, not the model
+(§6). The measured save_rate replaces the 0.30 assumption in §3 for the contacted book.
 
 ## 8. Productionisation (Phase E)
 The notebooks are the lab; `src/` is the shipped pipeline. Each call chosen for defensibility.
@@ -182,7 +208,7 @@ The notebooks are the lab; `src/` is the shipped pipeline. Each call chosen for 
   (`churn-base12@prod`), loaded by alias, never a run hash. Local sqlite backend. The registry is thin
   (register + load-by-alias, no stage-promotion workflow) because there's one model and one consumer.
   Tracking logs params/metrics so the base12-vs-14feat selection story is auditable.
-- **Threshold derived, never hardcoded.** Cost params (offer ₹150, save_rate 0.30, ARPU ₹129, horizon)
+- **Threshold derived, never hardcoded.** Cost params (offer NT$150, save_rate 0.30, MEDIAN_MONTHLY_PAID NT$129, horizon)
   live in `src/config.py`; break-even and per-row EV are computed from them. `save_rate` and `value`
   are parameters, so Phase-D segment-specific save rates plug into the same rule without a rewrite.
   0.323 is an output, not a constant in the code.

@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from src import config
 
 MODEL_PATH = os.environ.get("MODEL_PATH", str(config.REPO_ROOT / "api" / "model"))
-VALUE = config.ARPU * config.HORIZON_MONTHS
+VALUE = config.MEDIAN_MONTHLY_PAID * config.HORIZON_MONTHS
 BREAK_EVEN = config.OFFER / (config.SAVE_RATE * VALUE)
 
 app = FastAPI(title="churn-base12 scorer", version="1.0")

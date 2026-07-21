@@ -47,7 +47,7 @@ customer-level assignment keeps each customer cleanly always-treated or always-c
 outcomes are independent reads of one assignment. Assignment is stratified (§5).
 
 ## 4. Arms, treatment, and the comparison baseline
-- **Treatment:** the retention offer (value ≈ ₹150, the `offer_cost` of DECISIONS §3), at expiry.
+- **Treatment:** the retention offer (value ≈ NT$150, the `offer_cost` of DECISIONS §3), at expiry.
 - **Control:** held out — no proactive contact.
 
 v1 is a single offer. Offer *size* is deliberately held fixed even though Phase C found price to be
@@ -103,7 +103,7 @@ Stated to be tested, not assumed — the C/D priors are carried only as priors:
 ## 8. Power & sample size
 The minimum detectable effect is anchored to the decision: the save_rate that flips a slice's EV
 sign — its **break-even save_rate**, `offer / (P(churn) × value)` at the 12-month horizon
-(value = ARPU ₹129 × 12 = ₹1,548):
+(value = median monthly paid NT$129 × 12 = NT$1,548):
 
 | slice | churn on the list (C) | break-even save_rate |
 |---|---|---|
@@ -149,7 +149,7 @@ i.e. measured save_rate exceeds that slice's break-even. Slices that clear it st
 population; those that don't are dropped, and that budget retires or shifts toward the clearing
 slices. The net EV of this slice-pruned policy is compared to the incumbent
 contact-all-above-threshold policy (§4); the difference is the realised value of the work. The
-measured save_rates feed straight back into the DECISIONS §3 cost layer (ARPU ₹129, value ₹1,548,
+measured save_rates feed straight back into the DECISIONS §3 cost layer (median monthly paid NT$129, value NT$1,548,
 break-even 0.323), replacing the 0.30 assumption per slice.
 
 ## 11. Threats to validity & guardrails

@@ -1,6 +1,7 @@
 """smoke: score_drift on synthetic fixtures with HAND-COMPUTED expected values.
 no db, no mlflow — exercises only the drift math. run: python -m tests.smoke_score_drift
 """
+# break_even values below are fixture thresholds, deliberately decoupled from config -- not the operating point
 import numpy as np
 
 from monitoring.score_drift import score_drift

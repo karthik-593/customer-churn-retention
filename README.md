@@ -17,9 +17,10 @@ is expected-value, not a probability cutoff:
 contact  iff  save_rate · value · P(churn) − offer ≥ 0
 ````
 
-At the locked operating point (offer ₹150, save_rate 0.30, ARPU ₹129 → 12-mo value ₹1,548) this is a
+At the locked operating point (offer NT$150, save_rate 0.30, median monthly paid NT$129 → 12-mo value NT$1,548) this is a
 derived break-even of P ≥ 0.323, never a hardcoded number. `save_rate` and `value` are parameters:
-Phase D measures `save_rate` per segment and the same rule still applies.
+Phase D measures `save_rate` for the off-auto-renew book (the contacted population) and the same
+rule applies.
 
 ## Approach (phases A–F)
 
@@ -43,8 +44,9 @@ Phase D measures `save_rate` per segment and the same rule still applies.
 
 - Test PR-AUC ≈ **0.40** (full-population refit **0.413** — the subsample isn't flattering it).
 - Calibrated; reliability tracks observed, Brier improves after isotonic.
-- Cost backtest @ 12-mo horizon: ≈ **3.5k** contacts, precision ≈ **0.50**, net ≈ **₹287k**; beats the
-  14-feature variant on net value and precision@budget.
+- Cost backtest @ 12-mo horizon (val-derived break-even 0.302, realized median monthly paid NT$129): **3,513**
+  contacts, precision **0.499**, net **NT$287k**; beats the 14-feature variant on net value and
+  precision@budget. Deployed threshold is 0.323 (median monthly paid NT$129, value NT$1,548).
 - Full-base batch run scores the whole monthly cohort (~785k paid) → ranked contact list.
 
 *Figures regenerated on `xgboost==3.3.0` (pinned). The contact count is a hard cut at the break-even, so

@@ -2,6 +2,7 @@
 no db, no mlflow — exercises only the metric math (the part I can verify without the real data).
 run: python -m tests.smoke_calibration
 """
+# break_even values below are fixture thresholds, deliberately decoupled from config -- not the operating point
 import numpy as np
 
 from monitoring.calibration import calibration_metrics

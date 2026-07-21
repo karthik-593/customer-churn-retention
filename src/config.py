@@ -34,9 +34,9 @@ MODEL_ALIAS         = "prod"
 #   EV = SAVE_RATE * value * P(churn) - OFFER  >= 0   <=>   P >= OFFER/(SAVE_RATE*value)
 # under a flat SAVE_RATE this collapses to one break-even (0.323); phase D makes SAVE_RATE
 # segment-specific and the SAME rule still targets "worth contacting". the threshold is always
-# DERIVED from these params, never hardcoded. ARPU/SAVE_RATE are documented business inputs
-# (derived once in notebook cell 38), not refit each run.
-OFFER          = 150     # Rs, retention offer cost per contact
-SAVE_RATE      = 0.30    # P(retain | contacted), flat global rate (phase D: per-segment)
-HORIZON_MONTHS = 12      # value horizon
-ARPU           = 129     # Rs/mo, median monthly spend on the paid book
+# DERIVED from these params, never hardcoded. MEDIAN_MONTHLY_PAID/SAVE_RATE are documented
+# business inputs (derived once in notebook cell 38), not refit each run.
+OFFER               = 150   # NT$, retention offer cost per contact
+SAVE_RATE           = 0.30  # P(retain | contacted), flat global rate (phase D: per-segment)
+HORIZON_MONTHS      = 12    # value horizon
+MEDIAN_MONTHLY_PAID = 129   # NT$/mo — median (not mean): robustness to high-value tail; understates mean customer value → raises break-even → contacts fewer; conservative, chosen deliberately

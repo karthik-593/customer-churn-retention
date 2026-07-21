@@ -74,7 +74,7 @@ def report(split="test"):
     y = df.is_churn.astype(int).to_numpy()
     p = np.asarray(_load_model().predict(df[config.BASE12]))   # pyfunc emits CALIBRATED P
 
-    be = config.OFFER / (config.SAVE_RATE * config.ARPU * config.HORIZON_MONTHS)
+    be = config.OFFER / (config.SAVE_RATE * config.MEDIAN_MONTHLY_PAID * config.HORIZON_MONTHS)
     s, rel = calibration_metrics(p, y, be)
 
     arrow = "under-predicts" if s["gap"] < 0 else "over-predicts"

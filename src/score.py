@@ -38,12 +38,12 @@ def evaluate():
     # the registered pyfunc emits CALIBRATED P directly (calibrator is bundled in)
     p = np.asarray(_load_model().predict(df[config.BASE12]))
 
-    value = config.ARPU * config.HORIZON_MONTHS                # Rs retained per save
+    value = config.MEDIAN_MONTHLY_PAID * config.HORIZON_MONTHS  # NT$ retained per save
     be = config.OFFER / (config.SAVE_RATE * value)             # derived break-even
     ev = config.SAVE_RATE * value * p - config.OFFER           # per-customer EV of contacting
     contact = ev >= 0                                          # == P >= be, by construction
 
-    # reproducibility check: ARPU re-derived from this cohort should match the config default
+    # reproducibility check: median_monthly_paid re-derived from this cohort should match config
     pm = df.payment_plan_days > 0
     arpu_chk = (df.loc[pm, "actual_amount_paid"] / df.loc[pm, "payment_plan_days"] * 30).median()
 
@@ -56,14 +56,18 @@ def evaluate():
     order = np.argsort(-p)                                     # rank all test by P for prec@budget
     prec_at = lambda k: float(y[order[:k]].mean())
 
-    print(f"ARPU Rs {config.ARPU} (derived {arpu_chk:.0f}) | value(12mo) Rs {value} | break-even {be:.3f}")
-    print(f"\n{'':17} contacted  precision  would_stay   net_Rs  prec@1000  prec@3000")
+    print(f"med_paid NT${config.MEDIAN_MONTHLY_PAID} (derived {arpu_chk:.0f}) | value(12mo) NT${value} | break-even {be:.3f}")
+    print(f"\n{'':17} contacted  precision  would_stay  net_NT$  prec@1000  prec@3000")
     print(f"{'base12 (locked)':17} {contacted:9d}  {precision:9.3f}  {would_stay:10d}  {net:7.0f}  "
           f"{prec_at(1000):9.3f}  {prec_at(3000):9.3f}")
     print(f"{'cell 38 target':17} {2772:9d}  {0.538:9.3f}  {1282:10d}  {276156:7d}  {0.704:9.3f}  {0.520:9.3f}")
 
-    if abs(arpu_chk - config.ARPU) > 1:
-        print(f"\n[warn] derived ARPU {arpu_chk:.1f} != config {config.ARPU} — reconcile before trusting net")
+    if abs(arpu_chk - config.MEDIAN_MONTHLY_PAID) / config.MEDIAN_MONTHLY_PAID > 0.05:
+        be_derived = config.OFFER / (config.SAVE_RATE * arpu_chk * config.HORIZON_MONTHS)
+        be_config  = config.OFFER / (config.SAVE_RATE * config.MEDIAN_MONTHLY_PAID * config.HORIZON_MONTHS)
+        print(f"\n[warn] derived med_paid {arpu_chk:.1f} vs config {config.MEDIAN_MONTHLY_PAID} "
+              f"({abs(arpu_chk - config.MEDIAN_MONTHLY_PAID) / config.MEDIAN_MONTHLY_PAID:.1%} gap) — "
+              f"implied break-even {be_derived:.3f} vs deployed {be_config:.3f}; reconcile before trusting net")
 
     # write the scored cohort, ranked by EV (worth), for inspection (gitignored reports/)
     REPORTS.mkdir(exist_ok=True)
@@ -93,7 +97,7 @@ def score(cutoff=None):
     n_free = int((df.is_free == 1).sum())
 
     p = np.asarray(_load_model().predict(paid[config.BASE12]))
-    value = config.ARPU * config.HORIZON_MONTHS
+    value = config.MEDIAN_MONTHLY_PAID * config.HORIZON_MONTHS
     be = config.OFFER / (config.SAVE_RATE * value)
     paid["p_churn"] = p
     paid["expected_value"] = config.SAVE_RATE * value * p - config.OFFER   # EV of contacting
@@ -109,12 +113,12 @@ def score(cutoff=None):
     REPORTS.mkdir(exist_ok=True)
     cl.to_csv(REPORTS / "contact_list.csv", index=False)
 
-    print(f"cutoff {cutoff} | value Rs {value} | break-even {be:.3f}")
+    print(f"cutoff {cutoff} | value NT${value} | break-even {be:.3f}")
     print(f"base this month : {len(df)}  (paid {len(paid)}, free->conversion {n_free})")
     pct = len(cl) / len(paid) if len(paid) else float("nan")
     print(f"contacted       : {len(cl)} ({pct:.1%} of paid), EV>=0, ranked by expected value")
     if len(cl):
-        print(f"EV range Rs     : {cl.expected_value.max():.0f} (top) -> {cl.expected_value.min():.0f} (last)")
+        print(f"EV range NT$    : {cl.expected_value.max():.0f} (top) -> {cl.expected_value.min():.0f} (last)")
     print(f"wrote contact_list table + {REPORTS / 'contact_list.csv'}")
     return cl
 
