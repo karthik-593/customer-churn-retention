@@ -42,16 +42,20 @@ rule applies.
 
 ## Results (paid scorer, temporal test set)
 
-- Test PR-AUC ≈ **0.40** (full-population refit **0.413** — the subsample isn't flattering it).
+- Test PR-AUC ≈ **0.40** (full-population refit **0.412** — the subsample isn't flattering it).
 - Calibrated; reliability tracks observed, Brier improves after isotonic.
-- Cost backtest @ 12-mo horizon (val-derived break-even 0.302, realized median monthly paid NT$129): **3,513**
-  contacts, precision **0.499**, net **NT$287k**; beats the 14-feature variant on net value and
+- Cost backtest @ 12-mo horizon (val-derived break-even 0.303, realized median monthly paid NT$129): **3,260**
+  contacts, precision **0.505**, net **NT$275k**; beats the 14-feature variant on net value and
   precision@budget. Deployed threshold is 0.323 (median monthly paid NT$129, value NT$1,548).
 - Full-base batch run scores the whole monthly cohort (~785k paid) → ranked contact list.
 
-*Figures regenerated on `xgboost==3.3.0` (pinned). The contact count is a hard cut at the break-even, so
-it wobbles ~±1% run-to-run under multithreaded training; the stable operating metric is precision@budget,
-not the integer.*
+*Figures regenerated on `xgboost==3.3.0`, pinned to `n_jobs=1` on all sampled-scale fits (the
+full-population refit stays at `n_jobs=4` — cost, not correctness). Test PR-AUC on raw scores is
+reproducible to 6 decimal places (0.402121). Instability enters at the isotonic calibrator: calibrated
+PR-AUC differs in the 4th decimal, prec@budget moves ~0.005, and the contact count — a hard cut at a
+threshold — moves ~5%, with a ~100-customer mass point sitting on the val-derived cut (0.303). The
+deployed cut (0.323) has no mass point within ±0.005 of it and is structurally more stable. Point
+estimates above are from one pinned run, not an average.*
 
 ## Monitoring (Phase F)
 

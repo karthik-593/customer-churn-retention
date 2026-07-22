@@ -133,39 +133,70 @@ out.
 category mix shifts across the temporal split, so it overfits and degrades the honest test number.
 
 lifecycle (`tenure_days`, `n_prior_cycles`) — built, kept out of the scorer. Selection used a
-val-set OOF cost backtest (3-fold temporal, leave-one-cohort-month-out calibration, val break-even
-0.302 from median monthly paid NT$138): base12 net NT$234k vs 14-feat NT$220k; prec@1k 0.633 vs 0.608; prec@3k 0.461
-vs 0.452. base12 wins. A val-bootstrapped paired comparison (2000 resamples) shows the gap's
-character: topline within noise (PR-AUC delta −0.0068 [−0.0160, +0.0024], CI spans zero, mean
-slightly favours base12); 14-feat overfits (train 0.66 / test 0.40 — tenure acts as a calendar clock
-under the temporal split); base12's train–test gap is ≈0. The on-auto-renew safe slice
-(`auto_renew = 1`, n=77,645, base_rate 0.0109) sharpens on val: +0.0435 [+0.0278, +0.0599] — both
-bounds above zero; the absolute starting point is low, so this is a ranking improvement on a low-P
-slice, not a large absolute lift.
+val-set OOF cost backtest: 2-fold random-shuffle OOF isotonic within val, seed 42 (calibration
+integrity only — fitting and scoring a calibrator on the same rows overstates precision/net; this is
+a split inside val, not a new point-in-time boundary, so rule #5's discipline on the outer split is
+untouched). Val break-even 0.303 (median monthly paid NT$138): base12 net NT$228,773 vs 14-feat
+NT$227,960; prec@1k 0.631 vs 0.611; prec@3k 0.456 vs 0.456. base12 wins on every axis — fewer
+contacts (2,601 vs 2,887), higher precision (0.481 vs 0.462), higher net, higher prec@1k — but the
+margin is now thin (~NT$800, not the ~NT$14k first reported nor the ~NT$5.9k of the prior rerun);
+see the stability note below for why these point estimates move between runs. A val-bootstrapped
+paired comparison (2000 resamples) shows the gap's character: topline within noise (PR-AUC delta
+−0.0049 [−0.0142, +0.0045], CI spans zero, mean slightly favours base12); 14-feat overfits (train
+0.66 / test 0.40 — tenure acts as a calendar clock under the temporal split); base12's train–test
+gap is ≈0. The on-auto-renew safe slice (`auto_renew = 1`, n=77,645, base_rate 0.0109) sharpens on
+val: +0.0481 [+0.0322, +0.0650] — both bounds above zero; the absolute starting point is low, so
+this is a ranking improvement on a low-P slice, not a large absolute lift. The 14-feat comparison
+figures move more between runs than base12's do (more trees, 172 vs 32, more accumulation order to
+diverge) — the conclusion (base12 wins, topline within noise, safe-slice real) has held across every
+run so far, but the exact margin has not; no percentage is quoted here because two different runs
+gave two different margins.
 
-Test figures are report-only. At the val-derived break-even 0.302: 3,513 contacted, precision 0.499,
-net NT$286,679 at realized test median monthly paid NT$129; NT$343,444 at val median monthly paid NT$138 is a sensitivity line. The
-similar figure vs the prior NT$287k is coincidence — a looser cut and the same realized median monthly paid. The
-break-even rests on save_rate = 0.30, which is assumed and unmeasured (AB_DESIGN.md exists to
-measure it), so the 0.302-vs-0.323 distinction is smaller than the uncertainty underneath it.
+Test figures are report-only. At the val-derived break-even 0.303: 3,260 contacted, precision 0.505,
+net NT$275,402 at realized test median monthly paid NT$129 (deployed valuation); NT$325,998 at val
+median monthly paid NT$138 is a sensitivity line, same contact list. (This row previously carried a
+different number — 3,513/0.499/NT$286,679 — that no cell in this notebook ever produced; it was the
+deployed-cut figure below, mislabeled. B4, added specifically to compute this row, gives the number
+above.) The break-even rests on save_rate = 0.30, which is assumed and unmeasured (AB_DESIGN.md
+exists to measure it), so the 0.303-vs-0.323 distinction is smaller than the uncertainty underneath
+it. For reference, evaluated at the deployed cut 0.323 instead: 2,984 contacted, precision 0.526,
+net NT$281,972.
 
-**Selection audit.** Selection was originally run on the test set — a procedure error. The corrected
-procedure (val OOF backtest) re-derived the same lock. The deployed threshold of 0.323 (median monthly paid NT$129,
-value NT$1,548) was always correct; the error was in which set the selection ran on, not in the
-threshold. The reported backtest numbers changed; the deployed system did not.
+**Selection audit.** Selection was originally run on the test set — a procedure error, corrected by
+moving it to a val OOF backtest (above). The backtest's originally-reported method and numbers
+("3-fold temporal, leave-one-cohort-month-out" calibration; 234k/220k net, prec@1k 0.633/0.608,
+prec@3k 0.461/0.452, bootstrap CIs −0.0068/+0.0435) described a calibration that was never
+implemented — no script producing them survived, and they're replaced above with a real 2-fold OOF
+run. The lock (base12) didn't change; the deployed threshold of 0.323 (median monthly paid NT$129,
+value NT$1,548) was always correct and untouched by any of this — only the val-side backtest numbers
+moved.
 
 The safe slice is closed by cost arithmetic. The entire val safe slice lies below the break-even for
-any save_rate ≤ 1.0: the top-decile mean P of 0.0398 requires save_rate 2.275 — impossible. 0 of
-77,645 val safe-slice customers clear even the 0.302 backtest cut. Segment-specific save rates
-cannot unlock this slice; the binding constraint is the offer cost, not the model. At NT$20, the
-break-even P drops to 0.043 and 3,146 safe-slice customers become EV-positive: net upper bound
-NT$23,349 at deployed valuation (median monthly paid NT$129 × 12 = NT$1,548; save_rate 0.30 assumed
-for a NT$150 discount — a cheap touch plausibly moves fewer; upper bound). The bracket is sharp:
-NT$30 puts 895 above cut (net NT$2,783, near break-even), NT$20 puts 3,146 (net NT$23,349). A
-low-cost channel (email or
-in-app nudge at ≈NT$20) is worth measuring against this segment if one exists — the current design has
-no such channel. The closure argument rests on calibration that holds inside the slice: overall
-mean_pred 0.01074 vs observed 0.01086; top decile 0.03981 vs 0.04000.
+any save_rate ≤ 1.0: qcut on the slice's calibrated P collapses to 8 bins, not 10 — ties in the
+isotonic step function put thousands of customers at near-identical near-zero P, so a clean top
+decile doesn't exist here. The top bin (~7.8% of the slice, n=6,083) has mean P 0.0504 and requires
+save_rate 1.922 to clear break-even — impossible. 0 of 77,645 val safe-slice customers clear even
+the 0.303 backtest cut, and this is true independent of exactly which cut: the maximum calibrated P
+across the entire safe slice is 0.1437, so nothing in it clears any cut in the 0.30 region — 0.302,
+0.303, or the deployed 0.323 all land the same way. Segment-specific save rates cannot unlock this
+slice; the binding constraint is the offer cost, not the model. At NT$20, the break-even P drops to
+0.043 and 3,578 safe-slice customers become EV-positive: net upper bound NT$32,111 at deployed
+valuation (median monthly paid NT$129 × 12 = NT$1,548; save_rate 0.30 assumed for a NT$150 discount
+— a cheap touch plausibly moves fewer; upper bound). At NT$30, 993 clear cut (net NT$8,452, still
+comfortably positive this run) — this end of the bracket has moved the most across reruns of any
+figure in this closure, because NT$30's break-even (0.0646) falls inside the dense top bin rather
+than at its edge, so the count is set by the internal shape of one bin and reshuffles with any
+calibration change — the same hard-cut instability the README documents for the deployed contact
+count. The bracket conclusion is unchanged: a low-cost channel (email or in-app nudge at ≈NT$23, the
+top bin's own max EV-positive offer this run) is worth measuring against this segment if one exists
+— the current design has no such channel. The closure argument's own calibration check, top bin:
+predicted 0.0504 vs realized 0.0462.
+
+**Run-to-run stability.** Test PR-AUC on raw scores is reproducible to 6 decimal places (0.402121).
+Instability enters at the isotonic calibrator: calibrated PR-AUC differs in the 4th decimal,
+prec@budget moves ~0.005, and contact counts — a hard cut at a threshold — move ~5%, with a
+~100-customer mass point sitting on the val-derived cut 0.303. The deployed cut 0.323 has no mass
+point within ±0.005 and is structurally more stable.
 
 This overturned the starting hypothesis that lifecycle would help. The result: lifecycle is
 topline-neutral, the 14-feat overfits via the tenure clock, and it sharpens a slice that the current
