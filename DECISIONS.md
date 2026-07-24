@@ -68,9 +68,9 @@ Robust to the softest assumption. Until Phase D measures save_rate, 0.30 is the 
 the sign doesn't flip across the range.
 
 Probabilities must be calibrated before entering this formula (PROJECT_RULES.md rule #7) — the threshold
-reads P(churn) as money. Isotonic-on-val keeps the ranking near-identical (PR-AUC 0.400 → 0.388) and
-lines up the reliability curve (top decile predicted 0.305 vs observed 0.303). Watch the mild
-test-side under-prediction: cal mean 0.039 vs actual 0.047 — Phase F tier 2 monitors exactly this.
+reads P(churn) as money. Isotonic-on-val keeps the ranking near-identical (PR-AUC 0.402115 → 0.392343) and
+lines up the reliability curve (top decile predicted 0.2955 vs observed 0.2950). Watch the mild
+test-side under-prediction: cal mean ≈0.0391 vs actual ≈0.0465 — Phase F tier 2 monitors exactly this.
 
 ## 4. Unit of analysis & train/val/test split
 Training rows are monthly expiry cohorts: for each calendar month, one row per customer whose
@@ -114,9 +114,9 @@ Why scope it out instead of one model for both:
   retain, so the EV formula is meaningless for it. "Convert, don't retain" is the right intervention.
 - Trials are trivially separable (one `is_free` split cleaves the ~93%-churn block), so a rule
   captures them as well as the model would, and keeps the headline honest: with trials in, topline
-  test PR-AUC ≈ 0.59 is mostly an `is_free` detector; on paid only it's ≈ 0.40 (test 0.400) — the
+  test PR-AUC ≈ 0.59 is mostly an `is_free` detector; on paid only it's ≈ 0.40 (test 0.402) — the
   deployable number.
-- Scoping costs no accuracy: the paid-refit model (test 0.400) matches the all-population model scored
+- Scoping costs no accuracy: the paid-refit model (test 0.402) matches the all-population model scored
   on paid rows (≈0.400). The `is_free` split was free to the tree, not capacity-stealing — so this is
   a call about honesty and economics, not a performance trade-off.
 
