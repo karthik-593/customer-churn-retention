@@ -10,7 +10,8 @@ time, so monitoring is in two parts.
 
 All hand-rolled on numpy/pandas, smoke-tested on synthetic fixtures, checked against real cohort
 output. No Evidently — it'd only wrap tier 3 (per-feature attribution, the least useful tier), and
-its 0.1/0.25 bands aren't tied to this model. Same reasoning as the hand-rolled uplift (DECISIONS §7).
+its 0.1/0.25 bands aren't tied to this model. Restraint logic: hand-roll what's load-bearing; don't
+wrap a low-value tier-3 signal in a library whose bands aren't tuned to this model.
 
 ## Scope: demonstrated, not validated
 
@@ -19,7 +20,7 @@ cohorts in-distribution by construction. Detection is only proven in the smoke t
 faults (under-prediction, tail-thinning, composition shift, corrupted columns). A real cohort
 passing means the pipeline ran; it doesn't mean detection works. So Phase F is the discipline and
 the trigger, unit-tested, on data with no failure in it. Tier 2 catching a seasonal base-rate swing
-(AB_DESIGN §11) is the case that matters, and it hasn't had cause to fire.
+is the case that matters, and it hasn't had cause to fire.
 
 ## Hierarchy
 
@@ -31,7 +32,7 @@ Run in this order:
 3. per-feature drift (PSI) — attribution, only if 1 or 2 fires
 
 Not feature-drift first. The failure mode here is label shift — base rate moves with
-season/promo/price (§11). It breaks the frozen calibrator but can leave covariates flat, so a
+season/promo/price. It breaks the frozen calibrator but can leave covariates flat, so a
 feature-drift check misses it. base12 is auto-renew-dominated anyway, so the covariate moves that
 matter already show up in the score distribution. Per-feature PSI is only useful to explain a move
 tier 1 or 2 already caught. Tier 3 isn't built — nothing to attribute yet.

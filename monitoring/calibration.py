@@ -4,8 +4,8 @@ the system has no ground truth at score time; the only honest "is the rupee math
 signal is predicted calibrated P vs realized churn, 30d later. this measures exactly that on a
 labelled cohort: overall (mean_pred vs realized base_rate), per-decile reliability (reproduces
 train.py's cell-46 table), and IN THE CONTACTED BAND (P >= break-even) where the decision actually
-spends. label-shift (a moving base rate, §3 / AB_DESIGN §11) breaks the frozen calibrator here
-first, and shows up in `gap` even when covariates barely move.
+spends. label-shift (a moving base rate, §3) breaks the frozen calibrator here first, and shows up
+in `gap` even when covariates barely move.
 
 run on the locked test split, these numbers ARE the reference a future matured cohort is judged
 against — no pass/fail band is hardcoded here; that belongs to the cohort-comparison step, defined

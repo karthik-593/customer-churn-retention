@@ -94,17 +94,6 @@ If a figure can't be traced to one of those, it doesn't belong in this table.
 | MEDIAN_MONTHLY_PAID | NT$129 | `src/config.py:42` | — |
 | value (= MEDIAN_MONTHLY_PAID × HORIZON_MONTHS) | NT$1,548 | derived, `src/config.py:39-42`; printed value matches `02_model.ipynb#6d56c25f` | — |
 | break-even (= OFFER / (SAVE_RATE × value)) | 0.323 | derived, `src/config.py:39-42`; printed value matches `02_model.ipynb#6d56c25f` | — |
-| **— Hillstrom uplift experiment (Phase D) —** | | | |
-| naive ATE (any email vs none) | +0.0609 (control 0.1062, mailed 0.1670) | `04_uplift_experiment.ipynb#dac2436e` | test |
-| T-learner test mean predicted uplift | +0.0633 | `04_uplift_experiment.ipynb#27b5b0d6` | test |
-| Qini coefficient (area vs random) | 54.93 | `04_uplift_experiment.ipynb#afcd9d42` | test |
-| total incremental visits, full test | 704.4 | `04_uplift_experiment.ipynb#afcd9d42` | test |
-| top-30%-targeted incremental visits: model vs random | 285.5 vs 211.3 | `04_uplift_experiment.ipynb#afcd9d42` | test |
-| tier Q5 (persuadable): n / realised uplift | 3,840 / 0.0731 | `04_uplift_experiment.ipynb#6a33bb9c` | test |
-| tier Q4: n / realised uplift | 3,840 / 0.0699 | `04_uplift_experiment.ipynb#6a33bb9c` | test |
-| tier Q3: n / realised uplift | 3,840 / 0.0518 | `04_uplift_experiment.ipynb#6a33bb9c` | test |
-| tier Q2: n / realised uplift | 3,840 / 0.0395 | `04_uplift_experiment.ipynb#6a33bb9c` | test |
-| tier Q1 (sleeping/low): n / realised uplift | 3,840 / 0.0401 | `04_uplift_experiment.ipynb#6a33bb9c` | test |
 
 ## Stability
 

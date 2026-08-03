@@ -47,7 +47,9 @@ Cutoff = the break-even probability this implies, `offer / (save × value)`, not
 
 Terms (fixed where assumed, derived where possible):
 - `offer_cost = NT$150` — the retention offer.
-- `save_rate = 0.30` — assumed lift from contact. The softest number; Phase D measures it (uplift).
+- `save_rate = 0.30` — a documented planning assumption, not a measured value. The softest number
+  in the model; grounding it per-segment needs a randomised holdout on the contacted (off-auto-renew)
+  book — planned, not yet built (§7).
 - `value = median monthly paid × horizon`, median monthly paid = NT$129/mo, derived from data (median of
   `actual_amount_paid / payment_plan_days × 30` over paid test rows — lands on the standard monthly
   plan price).
@@ -59,13 +61,13 @@ stays positive too (6mo +NT$3.2k, the thinnest point). The conclusion doesn't hi
 
 Operating point we quote: 12 months → value NT$1,548 → break-even ≈ 0.323. So we contact paid customers
 above ~0.32 calibrated P(churn) — not 0.5, and not the earlier ~0.63 (a flat NT$800 placeholder, now
-retired). At this point the rule contacts ~3,491 paid customers at 0.50 precision, net ≈ NT$287k over
-12 months. The count is a hard cut at the break-even, so it wobbles ~±1% run-to-run under
+retired). At this point the rule contacts ~2,984 paid customers at 0.526 precision, net ≈ NT$281,972
+over 12 months. The count is a hard cut at the break-even, so it wobbles ~±1% run-to-run under
 multithreaded training; plan on precision@budget, not the integer.
 
 Sensitivity: hold the horizon at 12 months, sweep save_rate 0.15–0.40 → net-positive even at 0.15.
-Robust to the softest assumption. Until Phase D measures save_rate, 0.30 is the planning anchor and
-the sign doesn't flip across the range.
+This is the primary defense of 0.30: the contact call doesn't hinge on the exact value, and the sign
+doesn't flip across the range.
 
 Probabilities must be calibrated before entering this formula (PROJECT_RULES.md rule #7) — the threshold
 reads P(churn) as money. Isotonic-on-val keeps the ranking near-identical (PR-AUC 0.402115 → 0.392343) and
@@ -157,9 +159,9 @@ net NT$275,402 at realized test median monthly paid NT$129 (deployed valuation);
 median monthly paid NT$138 is a sensitivity line, same contact list. (This row previously carried a
 different number — 3,513/0.499/NT$286,679 — that no cell in this notebook ever produced; it was the
 deployed-cut figure below, mislabeled. B4, added specifically to compute this row, gives the number
-above.) The break-even rests on save_rate = 0.30, which is assumed and unmeasured (AB_DESIGN.md
-exists to measure it), so the 0.303-vs-0.323 distinction is smaller than the uncertainty underneath
-it. For reference, evaluated at the deployed cut 0.323 instead: 2,984 contacted, precision 0.526,
+above.) The break-even rests on save_rate = 0.30, which is assumed and unmeasured (grounding it needs a
+randomised holdout on the contacted book — planned, not yet built, §7), so the 0.303-vs-0.323
+distinction is smaller than the uncertainty underneath it. For reference, evaluated at the deployed cut 0.323 instead: 2,984 contacted, precision 0.526,
 net NT$281,972.
 
 **Selection audit.** Selection was originally run on the test set — a procedure error, corrected by
@@ -202,29 +204,23 @@ This overturned the starting hypothesis that lifecycle would help. The result: l
 topline-neutral, the 14-feat overfits via the tenure clock, and it sharpens a slice that the current
 offer economics cannot reach.
 
-## 7. Saveability ≠ P(churn) — why Phase D is an uplift experiment, not more scoring
+## 7. Saveability ≠ P(churn) — Phase D (planned, not built)
 Phase C's contact list (calibrated P ≥ break-even) collapses to one regime: it's entirely the
 off-auto-renew book. On-auto-renew customers get a negative SHAP push and never clear the threshold.
-Within the book, new / first-cycle customers are a high-churn slice (943 of ~3,491, ~27%), not the
-bulk. The dominant SHAP drivers are `is_auto_renew` and price, and the price effect is real, not a
-collinear artifact (raw churn rises 0.016 → 0.173 across price quartiles). This corrects an earlier
-(14-feat) read that called the list "majority new."
 
 The core point: a churn score ranks who will leave, not who an offer can move. Saveability is causal —
-the lift in retention from contacting — and the contact list / SHAP give lever *hypotheses* only. So
-Phase D doesn't build a bigger classifier; it builds an uplift model on data where the treatment was
-randomised. On Hillstrom (a real email RCT) a T-learner → held-out Qini validated the method end to
-end: Qini coef 42, the top 30% by predicted uplift captures ~24% more incremental response than
-random, a persuadable head is real, there are no true sleeping-dogs, and the scores rank but don't
-size the effect. The uplift *tree* was dropped — a direct-method contrast that wouldn't change the
-call here.
+the lift in retention from contacting — and the contact list / SHAP give lever *hypotheses* only.
+Measuring it needs a randomised holdout on the contacted (off-auto-renew) book: some of that book
+contacted, some withheld, and the gap in 30-day retention is the actual `save_rate`, replacing the
+0.30 assumption in §3.
 
-What transfers to KKBox is the method and discipline (uplift ≠ propensity; a control holdout is
-non-negotiable; trust coarse tiers, not per-customer scores), not Hillstrom's numbers. The experiment
-specified in **AB_DESIGN.md** measures save_rate for the population that is actually contacted — the
-off-auto-renew book. It cannot reach the on-auto-renew safe slice: that slice's P values lie below
-the break-even for any save_rate ≤ 1.0 and the binding constraint is the offer cost, not the model
-(§6). The measured save_rate replaces the 0.30 assumption in §3 for the contacted book.
+This is scoped out deliberately, not left unfinished. There is no KKBox treatment data — no record of
+customers randomly assigned to contact vs. not — so there is no honest way to back a per-segment
+save_rate out of observational history (that's the uplift-vs-propensity trap: who got contacted
+historically correlates with risk, confounding any naive estimate). Building a model on a proxy
+dataset and presenting it as KKBox's save_rate would not be defensible; the honest deliverable here
+is the experiment design, not a faked number. Phase D stays a planned slot until that experiment can
+run on KKBox's own contacted population.
 
 ## 8. Productionisation (Phase E)
 The notebooks are the lab; `src/` is the shipped pipeline. Each call chosen for defensibility.
@@ -271,15 +267,16 @@ tier, not on a drift flag — a drift signal says the inputs moved, not that the
 The calls that matter:
 - **Outcome-first hierarchy:** data-quality gate → score/contact drift → calibration on matured labels
   → per-feature drift (attribution only, if the earlier tiers fire). Feature-drift-first misses label
-  shift (base rate moving with season/promo/price, AB_DESIGN §11), which is the likely failure here
-  and breaks the frozen calibrator while leaving covariates flat.
+  shift (base rate moving with season/promo/price), which is the likely failure here and breaks the
+  frozen calibrator while leaving covariates flat.
 - **Watch the contacted-band gap and realized precision@budget, not global ECE.** Global ECE on test
   is 0.0080, but ~86% of it is near-zero-P customers who never get contacted. The contacted band is
   mean_pred 0.4768 vs realized 0.4987 → gap −0.022, ~3× the global figure — the §3 under-prediction,
   on exactly the customers the rule contacts.
 - **Hand-rolled, no Evidently.** It would only wrap the per-feature tier (the least useful), and its
-  0.1/0.25 bands aren't tied to this model. Same reasoning as the hand-rolled uplift (§7). PSI was
-  built, run on two cohorts, and dropped — flat both times, arbitrary bands.
+  0.1/0.25 bands aren't tied to this model. Same restraint logic used elsewhere in this project:
+  hand-roll what's load-bearing, don't wrap a low-value tier in a library whose bands aren't tuned to
+  this model. PSI was built, run on two cohorts, and dropped — flat both times, arbitrary bands.
 - **Demonstrated, not validated.** ~2 labelable months and adjacent cohorts are in-distribution, so no
   tier has caught a real regression; detection is proven only in the synthetic smoke tests. The
   retrain trigger (contacted-band gap past ~2-3× the test reference, or precision@budget under ~0.45)

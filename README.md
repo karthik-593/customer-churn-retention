@@ -5,8 +5,7 @@ who to send a retention offer to, ranked on expected value rather than P(churn) 
 is a ranked contact list plus an on-demand scoring API.
 
 Guiding constraint: grounded over impressive. Every choice is defensible line-by-line. Full rationale
-in `DECISIONS.md`, the Phase-D experiment spec in `AB_DESIGN.md`, the Phase-F monitoring runbook in
-`MONITORING.md`.
+in `DECISIONS.md`, the Phase-F monitoring runbook in `MONITORING.md`.
 
 ## Problem framing
 
@@ -18,9 +17,11 @@ contact  iff  save_rate · value · P(churn) − offer ≥ 0
 ````
 
 At the locked operating point (offer NT$150, save_rate 0.30, median monthly paid NT$129 → 12-mo value NT$1,548) this is a
-derived break-even of P ≥ 0.323, never a hardcoded number. `save_rate` and `value` are parameters:
-Phase D measures `save_rate` for the off-auto-renew book (the contacted population) and the same
-rule applies.
+derived break-even of P ≥ 0.323, never a hardcoded number. `save_rate` and `value` are parameters.
+`save_rate = 0.30` is a documented planning assumption, not a measured value — grounding it
+per-segment needs a randomised holdout on the contacted (off-auto-renew) book, which is planned but
+not yet built (Phase D, below). The contact call doesn't hinge on the exact figure: swept 0.15–0.40
+at a fixed 12-month horizon, the rule stays net-positive throughout — the sign never flips.
 
 ## Approach (phases A–F)
 
@@ -34,8 +35,10 @@ rule applies.
   Isotonic-calibrated, since the cost rule reads P as money.
 - **C — explainability.** SHAP confirms the drivers (off-auto-renew dominates, price is a real effect)
   and shows the contact list collapses to the off-auto-renew book.
-- **D — uplift (design).** Saveability ≠ P(churn). A randomised retention experiment to measure
-  `save_rate` per slice, method validated on the Hillstrom RCT. Spec in `AB_DESIGN.md`.
+- **D — uplift (planned, not built).** Saveability ≠ P(churn) — measuring per-segment `save_rate`
+  needs a randomised holdout on the contacted (off-auto-renew) book. Scoped out deliberately: no
+  KKBox treatment data exists, and the honest deliverable is the experiment design, not a model
+  faked on a proxy dataset.
 - **E — productionisation.** Modular `src/`, MLflow registry, one-command batch pipeline, thin FastAPI
   + Docker.
 - **F — monitoring.** Two-tier drift + calibration monitoring, hand-rolled. Runbook in `MONITORING.md`.
@@ -111,15 +114,15 @@ monitoring/
   calibration.py      tier 2 — predicted vs realized (the spine)
 tests/                offline smoke tests (synthetic fixtures, hand-computed expected values)
 Dockerfile  Makefile  make.bat
-notebooks/            01 eda/label · 02 model · 03 shap · 04 uplift
-DECISIONS.md  AB_DESIGN.md  MONITORING.md
+notebooks/            01 eda/label · 02 model · 03 shap
+DECISIONS.md  MONITORING.md
 ````
 
 ## Stack
 
 DuckDB (SQL feature engineering) · pandas · scikit-learn · XGBoost · SHAP · MLflow (tracking + registry,
-local sqlite backend) · FastAPI · Docker. Phase-D uplift and Phase-F monitoring are hand-rolled on
-numpy/pandas — no Evidently, no causal-uplift library.
+local sqlite backend) · FastAPI · Docker. Phase-F monitoring is hand-rolled on numpy/pandas — no
+Evidently.
 
 ## Design notes
 

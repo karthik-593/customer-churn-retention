@@ -32,11 +32,15 @@ MODEL_ALIAS         = "prod"
 # --- decision layer (E3) --------------------------------------------------------
 # VALUE rule, not a churn cutoff: contact iff the expected saved value clears the offer —
 #   EV = SAVE_RATE * value * P(churn) - OFFER  >= 0   <=>   P >= OFFER/(SAVE_RATE*value)
-# under a flat SAVE_RATE this collapses to one break-even (0.323); phase D makes SAVE_RATE
-# segment-specific and the SAME rule still targets "worth contacting". the threshold is always
-# DERIVED from these params, never hardcoded. MEDIAN_MONTHLY_PAID/SAVE_RATE are documented
-# business inputs (derived once in notebook cell 38), not refit each run.
+# under a flat SAVE_RATE this collapses to one break-even (0.323); a future per-segment SAVE_RATE
+# (phase D, planned, not built) would plug into the SAME rule, still targeting "worth contacting".
+# the threshold is always DERIVED from these params, never hardcoded. MEDIAN_MONTHLY_PAID/SAVE_RATE
+# are documented business inputs (derived once in notebook cell 38), not refit each run.
 OFFER               = 150   # NT$, retention offer cost per contact
-SAVE_RATE           = 0.30  # P(retain | contacted), flat global rate (phase D: per-segment)
+# SAVE_RATE is a documented planning assumption, not a measured value (DECISIONS.md §3, §7).
+# Grounding it per-segment needs a randomised holdout on the contacted (off-auto-renew) book —
+# planned, not yet built. The contact call doesn't hinge on the exact figure: swept 0.15-0.40 at a
+# fixed 12-month horizon, the rule stays net-positive throughout, so the sign never flips.
+SAVE_RATE           = 0.30  # P(retain | contacted), flat global rate
 HORIZON_MONTHS      = 12    # value horizon
 MEDIAN_MONTHLY_PAID = 129   # NT$/mo — median (not mean): robustness to high-value tail; understates mean customer value → raises break-even → contacts fewer; conservative, chosen deliberately

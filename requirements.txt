@@ -18,5 +18,4 @@ uvicorn[standard]
 # notebooks
 jupyter
 
-# phase F monitoring and phase D uplift are hand-rolled on numpy/pandas:
-# no evidently (drift checks are ~12 hand-rolled tests), no scikit-uplift/causalml (T-learner + Qini, ~20 lines)
+# phase F monitoring is hand-rolled on numpy/pandas: no evidently (drift checks are ~12 hand-rolled tests)

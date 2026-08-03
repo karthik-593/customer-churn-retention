@@ -34,3 +34,6 @@ api/model/
 
 reports/
 PROJECT_RULES.md
+
+# Phase-D uplift work, scoped out of the shipped project — kept on disk for later, not tracked
+archive/

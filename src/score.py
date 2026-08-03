@@ -4,8 +4,14 @@ value rule, and reconcile against notebook cell 38 (cost-based model selection).
 value rule (NOT a churn cutoff): contact iff the expected saved value clears the offer cost —
     EV = SAVE_RATE * value * P(churn) - OFFER  >= 0
 which is algebraically P >= OFFER/(SAVE_RATE*value) = break-even. under the flat global save rate
-this collapses to a single threshold (0.323); phase D varies SAVE_RATE per segment and the SAME
-code still targets "worth contacting". the threshold is derived, never a hardcoded 0.323.
+this collapses to a single threshold (0.323); a future per-segment SAVE_RATE (phase D, planned, not
+built) would vary this same code, still targeting "worth contacting". the threshold is derived, never
+a hardcoded 0.323.
+
+SAVE_RATE = 0.30 is a documented planning assumption, not a measured value (DECISIONS.md §3, §7).
+Grounding it per-segment needs a randomised holdout on the contacted (off-auto-renew) book — planned,
+not yet built. The contact call doesn't hinge on the exact figure: swept 0.15-0.40 at a fixed 12-month
+horizon, the rule stays net-positive throughout, so the sign never flips.
 
 run: python -m src.score     (after src.features + src.train)
 """
