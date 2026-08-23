@@ -29,7 +29,10 @@ import churn_pyfunc                 # noqa: E402  code_paths re-import resolves 
 # exact config from notebook cell 32's fit_xgb (the locked scorer we defend).
 XGB_PARAMS = dict(
     n_estimators=1000, learning_rate=0.05, max_depth=5, subsample=0.8, colsample_bytree=0.8,
-    eval_metric="aucpr", early_stopping_rounds=50, tree_method="hist", n_jobs=-1, random_state=42,
+    eval_metric="aucpr", early_stopping_rounds=50, tree_method="hist",
+    n_jobs=1,  # determinism: n_jobs=-1 relocates the isotonic steps and moves the contact count
+               # ~17% (2,984 -> 3,491) at cut 0.323; single-thread reproduces the canonical number.
+    random_state=42,
 )
 
 # labels live in cohorts_s (features never carry them, per E1). join back, paid only, stable order.

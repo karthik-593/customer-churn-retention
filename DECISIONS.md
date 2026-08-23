@@ -62,8 +62,11 @@ stays positive too (6mo +NT$3.2k, the thinnest point). The conclusion doesn't hi
 Operating point we quote: 12 months → value NT$1,548 → break-even ≈ 0.323. So we contact paid customers
 above ~0.32 calibrated P(churn) — not 0.5, and not the earlier ~0.63 (a flat NT$800 placeholder, now
 retired). At this point the rule contacts ~2,984 paid customers at 0.526 precision, net ≈ NT$281,972
-over 12 months. The count is a hard cut at the break-even, so it wobbles ~±1% run-to-run under
-multithreaded training; plan on precision@budget, not the integer.
+over 12 months. The count is deterministic given the thread count, not a stochastic ±1% wobble:
+multithreaded training (`n_jobs=-1`) reorders XGBoost's float reduction, shifting the early-stopping
+tree count and relocating the isotonic calibrator's steps — 3,491 contacts (0.500 precision,
+NT$286,728) at the same 0.323 cut, ~17% off. `n_jobs=1` is pinned in `train.py` for reproducibility;
+plan on precision@budget, not the integer.
 
 Sensitivity: hold the horizon at 12 months, sweep save_rate 0.15–0.40 → net-positive even at 0.15.
 This is the primary defense of 0.30: the contact call doesn't hinge on the exact value, and the sign
@@ -253,10 +256,13 @@ The notebooks are the lab; `src/` is the shipped pipeline. Each call chosen for 
   before predict — a training-sample int32/int64 artifact would otherwise surface as a 500.
 - **Orchestration: a Makefile** (`features → train → export → score`, plus `serve`/`smoke`), with a
   `make.bat` shim for Windows. A 3-step DAG doesn't warrant a flow engine.
-- **Reproducibility.** `xgboost==3.3.0` pinned. The contact count is a hard cut at the break-even and
-  wobbles ~±1% run-to-run under multithreaded XGBoost (early-stopping tree count shifts → calibrator
-  shifts → a few hundred borderline customers cross the line). That's why the notebook's ~3,491 and a
-  fresh `src` run's ~3,526 differ — same model, a threshold knife-edge. Plan on precision@budget.
+- **Reproducibility.** `xgboost==3.3.0` pinned. The contact count is a hard cut at the break-even, and
+  thread count is the variable that moves it — not run-to-run noise. Multithreaded training (`n_jobs=-1`)
+  reorders XGBoost's float reduction, shifting the early-stopping tree count (best_iteration) and
+  relocating the isotonic calibrator's steps around the 0.323 cut: 2,984 contacts at `n_jobs=1` vs 3,491
+  at `n_jobs=-1`, ~17% apart, same model — expected non-associativity of multithreaded float reduction,
+  not an XGBoost bug. `train.py` pins `n_jobs=1` so `python -m src.train` reproduces the canonical 2,984.
+  Plan on precision@budget, not the integer.
 
 ## 9. Monitoring (Phase F)
 The model scores at expiry; the label resolves 30 days later. No ground truth at score time, so

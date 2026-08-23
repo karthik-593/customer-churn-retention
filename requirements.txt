@@ -7,6 +7,7 @@ duckdb==1.5.4          # SQL feature engineering straight against the CSVs, no s
 scikit-learn==1.9.0    # logistic baseline + isotonic calibration
 xgboost==3.3.0         # pinned: contact count is a threshold knife-edge, wobbles under multithreading
 shap                   # phase C explainability
+optuna                 # HPO search (src/hpo.py) — TPE sampler over base12's XGB params
 
 # tracking + registry (local sqlite backend)
 mlflow
